@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LoanAdvisor</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Georgia', serif;
+      background: #0f1117;
+      color: #e8e4d9;
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 28px 40px;
+      border-bottom: 1px solid #2a2d35;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    header h1 {
+      font-size: 22px;
+      font-weight: normal;
+      letter-spacing: 0.04em;
+      color: #e8e4d9;
+    }
+
+    header span {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #4ade80;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 24px;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 32px;
+      align-items: start;
+    }
+
+    .panel {
+      background: #181b23;
+      border: 1px solid #2a2d35;
+      border-radius: 8px;
+      padding: 28px;
+    }
+
+    .panel h2 {
+      font-size: 13px;
+      font-weight: normal;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin-bottom: 24px;
+    }
+
+    .field { margin-bottom: 18px; }
+
+    .field label {
+      display: block;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #6b7280;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .field input {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid #2a2d35;
+      border-radius: 4px;
+      padding: 10px 12px;
+      color: #e8e4d9;
+      font-family: 'Courier New', monospace;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .field input:focus { border-color: #4ade80; }
+
+    button.primary {
+      width: 100%;
+      padding: 12px;
+      background: #4ade80;
+      color: #0f1117;
+      border: none;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.2s;
+    }
+
+    button.primary:hover { background: #22c55e; }
+    button.primary:disabled { background: #2a2d35; color: #6b7280; cursor: not-allowed; }
+
+    .right-col { display: flex; flex-direction: column; gap: 24px; }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .stat {
+      background: #181b23;
+      border: 1px solid #2a2d35;
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .stat .label {
+      font-family: 'Courier New', monospace;
+      font-size: 10px;
+      color: #6b7280;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .stat .value {
+      font-size: 26px;
+      font-weight: normal;
+      color: #4ade80;
+      letter-spacing: -0.01em;
+    }
+
+    .stat .sub {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    .chart-panel {
+      background: #181b23;
+      border: 1px solid #2a2d35;
+      border-radius: 8px;
+      padding: 28px;
+    }
+
+    .chart-panel h2 {
+      font-size: 13px;
+      font-weight: normal;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin-bottom: 20px;
+    }
+
+    canvas { width: 100% !important; }
+
+    /* Chat */
+    .chat-panel {
+      background: #181b23;
+      border: 1px solid #2a2d35;
+      border-radius: 8px;
+      padding: 28px;
+      grid-column: 1 / -1;
+    }
+
+    .chat-panel h2 {
+      font-size: 13px;
+      font-weight: normal;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin-bottom: 20px;
+    }
+
+    .chat-messages {
+      min-height: 160px;
+      max-height: 320px;
+      overflow-y: auto;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .msg {
+      max-width: 75%;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .msg.user {
+      background: #1e2330;
+      border: 1px solid #2a2d35;
+      align-self: flex-end;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+    }
+
+    .msg.assistant {
+      background: #0f1117;
+      border: 1px solid #2a2d35;
+      align-self: flex-start;
+      color: #c9f4d8;
+    }
+
+    .msg.system {
+      align-self: center;
+      color: #6b7280;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      background: none;
+      border: none;
+      padding: 0;
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .chat-input-row input {
+      flex: 1;
+      background: #0f1117;
+      border: 1px solid #2a2d35;
+      border-radius: 4px;
+      padding: 10px 14px;
+      color: #e8e4d9;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .chat-input-row input:focus { border-color: #4ade80; }
+
+    .chat-input-row button {
+      background: #4ade80;
+      color: #0f1117;
+      border: none;
+      border-radius: 4px;
+      padding: 10px 20px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .chat-input-row button:hover { background: #22c55e; }
+    .chat-input-row button:disabled { background: #2a2d35; color: #6b7280; cursor: not-allowed; }
+
+    .hidden { display: none; }
+
+    /* Amortization table */
+    .table-wrap {
+      max-height: 260px;
+      overflow-y: auto;
+      border: 1px solid #2a2d35;
+      border-radius: 6px;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-family: 'Courier New', monospace; font-size: 12px; }
+    th { background: #0f1117; color: #6b7280; padding: 8px 12px; text-align: right; letter-spacing: 0.06em; position: sticky; top: 0; }
+    th:first-child { text-align: center; }
+    td { padding: 7px 12px; text-align: right; border-top: 1px solid #1e2330; color: #c9f4d8; }
+    td:first-child { text-align: center; color: #6b7280; }
+    tr:hover td { background: #1e2330; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>LoanAdvisor</h1>
+    <span>AI-Powered Loan Calculator</span>
+  </header>
+
+  <div class="container">
+    <!-- Left: inputs -->
+    <div class="panel">
+      <h2>Loan Details</h2>
+      <div class="field">
+        <label>Loan Amount ($)</label>
+        <input type="number" id="principal" placeholder="250000" value="250000" min="1000" />
+      </div>
+      <div class="field">
+        <label>Annual Interest Rate (%)</label>
+        <input type="number" id="rate" placeholder="6.5" value="6.5" step="0.01" min="0" />
+      </div>
+      <div class="field">
+        <label>Loan Term (Years)</label>
+        <input type="number" id="years" placeholder="30" value="30" min="1" max="50" />
+      </div>
+      <button class="primary" id="calc-btn" onclick="calculate()">Calculate</button>
+    </div>
+
+    <!-- Right: results -->
+    <div class="right-col" id="results" style="display:none">
+      <div class="summary-grid">
+        <div class="stat">
+          <div class="label">Monthly Payment</div>
+          <div class="value" id="stat-payment">—</div>
+        </div>
+        <div class="stat">
+          <div class="label">Total Paid</div>
+          <div class="value" id="stat-total">—</div>
+          <div class="sub" id="stat-total-sub"></div>
+        </div>
+        <div class="stat">
+          <div class="label">Total Interest</div>
+          <div class="value" id="stat-interest">—</div>
+          <div class="sub" id="stat-interest-sub"></div>
+        </div>
+      </div>
+
+      <div class="chart-panel">
+        <h2>Balance Over Time</h2>
+        <canvas id="chart" height="180"></canvas>
+      </div>
+
+      <div class="panel">
+        <h2>Amortization Schedule</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>Payment</th>
+                <th>Principal</th>
+                <th>Interest</th>
+                <th>Balance</th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat: full width below -->
+    <div class="chat-panel" id="chat-panel" style="display:none">
+      <h2>Ask About Your Loan</h2>
+      <div class="chat-messages" id="chat-messages">
+        <div class="msg system">Calculate your loan above, then ask me anything about it.</div>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" id="chat-input" placeholder="e.g. How much interest do I pay in year 1?" onkeydown="if(event.key==='Enter') sendMessage()" />
+        <button id="send-btn" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let loanData = null;
+    let chartInstance = null;
+
+    function fmt(n) {
+      return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    async function calculate() {
+      const principal = parseFloat(document.getElementById('principal').value);
+      const annual_rate = parseFloat(document.getElementById('rate').value);
+      const years = parseInt(document.getElementById('years').value);
+
+      if (!principal || !annual_rate || !years) {
+        alert('Please fill in all fields.');
+        return;
+      }
+
+      const btn = document.getElementById('calc-btn');
+      btn.disabled = true;
+      btn.textContent = 'Calculating...';
+
+      const res = await fetch('/api/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ principal, annual_rate, years }),
+      });
+
+      const data = await res.json();
+      loanData = data.summary;
+
+      // Summary stats
+      document.getElementById('stat-payment').textContent = fmt(loanData.monthly_payment);
+      document.getElementById('stat-total').textContent = fmt(loanData.total_paid);
+      document.getElementById('stat-total-sub').textContent = `over ${loanData.years} years`;
+      document.getElementById('stat-interest').textContent = fmt(loanData.total_interest);
+      document.getElementById('stat-interest-sub').textContent =
+        `${((loanData.total_interest / loanData.principal) * 100).toFixed(1)}% of principal`;
+
+      // Chart
+      const labels = data.schedule.filter((_, i) => i % 12 === 0).map(r => `Yr ${Math.ceil(r.month / 12)}`);
+      const balances = data.schedule.filter((_, i) => i % 12 === 0).map(r => r.balance);
+      const principalPaid = balances.map(b => loanData.principal - b);
+
+      if (chartInstance) chartInstance.destroy();
+      chartInstance = new Chart(document.getElementById('chart'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Remaining Balance',
+              data: balances,
+              borderColor: '#4ade80',
+              backgroundColor: 'rgba(74,222,128,0.07)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 0,
+            },
+            {
+              label: 'Principal Paid',
+              data: principalPaid,
+              borderColor: '#6366f1',
+              backgroundColor: 'rgba(99,102,241,0.07)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 0,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { labels: { color: '#6b7280', font: { family: 'Courier New', size: 11 } } },
+            tooltip: {
+              callbacks: { label: ctx => ' ' + fmt(ctx.parsed.y) },
+            },
+          },
+          scales: {
+            x: { ticks: { color: '#6b7280', font: { family: 'Courier New', size: 10 } }, grid: { color: '#1e2330' } },
+            y: {
+              ticks: { color: '#6b7280', font: { family: 'Courier New', size: 10 }, callback: v => '$' + (v / 1000).toFixed(0) + 'k' },
+              grid: { color: '#1e2330' },
+            },
+          },
+        },
+      });
+
+      // Table
+      const tbody = document.getElementById('table-body');
+      tbody.innerHTML = data.schedule.map(r => `
+        <tr>
+          <td>${r.month}</td>
+          <td>${fmt(r.payment)}</td>
+          <td>${fmt(r.principal)}</td>
+          <td>${fmt(r.interest)}</td>
+          <td>${fmt(r.balance)}</td>
+        </tr>`).join('');
+
+      document.getElementById('results').style.display = 'flex';
+      document.getElementById('results').style.flexDirection = 'column';
+      document.getElementById('results').style.gap = '24px';
+      document.getElementById('chat-panel').style.display = 'block';
+
+      btn.disabled = false;
+      btn.textContent = 'Recalculate';
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('chat-input');
+      const msg = input.value.trim();
+      if (!msg || !loanData) return;
+
+      addMessage(msg, 'user');
+      input.value = '';
+
+      const sendBtn = document.getElementById('send-btn');
+      sendBtn.disabled = true;
+      sendBtn.textContent = '...';
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, loan_data: loanData }),
+      });
+
+      const data = await res.json();
+      addMessage(data.response, 'assistant');
+
+      sendBtn.disabled = false;
+      sendBtn.textContent = 'Send';
+    }
+
+    function addMessage(text, role) {
+      const container = document.getElementById('chat-messages');
+      const div = document.createElement('div');
+      div.className = `msg ${role}`;
+      div.textContent = text;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+  </script>
+</body>
+</html>
